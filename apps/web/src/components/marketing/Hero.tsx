@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { I } from "./_p/Icons";
 import { MotionIn } from "./_p/MotionIn";
 import { BrowserFrame } from "./_p/BrowserFrame";
@@ -33,9 +34,9 @@ export function Hero() {
         </MotionIn>
 
         <MotionIn className="hero-cta" delay={220}>
-          <a href="#" className="btn btn-primary">
+          <Link href="/extension" className="btn btn-primary">
             <I.Chrome width={16} height={16} /> Add to Chrome — it&apos;s free
-          </a>
+          </Link>
           <a href="#demo" className="btn btn-ghost">
             <I.Eye width={15} height={15} /> See a live watch
           </a>

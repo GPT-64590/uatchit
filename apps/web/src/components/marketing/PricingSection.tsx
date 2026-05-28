@@ -1,5 +1,6 @@
 "use client";
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { I } from "./_p/Icons";
 import { MotionIn } from "./_p/MotionIn";
 
@@ -36,10 +37,10 @@ export function PricingSection() {
               <Feat>MCP feed for every watch</Feat>
               <Feat>Email notifications</Feat>
             </ul>
-            <a className="btn btn-primary tier-cta" href="#">
+            <Link className="btn btn-primary tier-cta" href="/extension">
               <I.Chrome width={15} height={15} /> Start watching
               <I.ArrowRight width={14} height={14} />
-            </a>
+            </Link>
           </MotionIn>
 
           <MotionIn className="tier tier-future card" delay={140}>

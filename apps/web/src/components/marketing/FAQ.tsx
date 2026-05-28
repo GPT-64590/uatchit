@@ -26,9 +26,9 @@ const Q = [
     ),
   },
   {
-    q: "Is there a roadmap?",
+    q: "Is it open source?",
     a: (
-      <>Yes — it&apos;s public. <a className="faq-link" href="#">View the roadmap →</a></>
+      <>Yes — it&apos;s public. <a className="faq-link" href="https://github.com/GPT-64590/uatchit" target="_blank" rel="noreferrer">View the source →</a></>
     ),
   },
 ];

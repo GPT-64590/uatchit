@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { I } from "./_p/Icons";
 import { MotionIn } from "./_p/MotionIn";
 
@@ -16,12 +17,12 @@ export function CTAStrip() {
             </p>
           </div>
           <div className="cta-actions">
-            <a className="btn btn-primary" href="#">
+            <Link className="btn btn-primary" href="/extension">
               <I.Chrome width={16} height={16} /> Add to Chrome
-            </a>
-            <a className="btn btn-ghost" href="#">
+            </Link>
+            <Link className="btn btn-ghost" href="/how-it-works">
               Read the docs <I.ArrowRight width={14} height={14} />
-            </a>
+            </Link>
           </div>
         </MotionIn>
       </div>

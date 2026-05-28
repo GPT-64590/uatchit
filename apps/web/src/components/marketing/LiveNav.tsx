@@ -57,9 +57,9 @@ export function LiveNav() {
         </div>
 
         <nav className="nv-links">
-          <a href="#how">How</a>
-          <a href="#cases">Cases</a>
-          <a href="#mcp">Agents</a>
+          <Link href="/#how">How</Link>
+          <Link href="/#cases">Cases</Link>
+          <Link href="/#mcp">Agents</Link>
           <Link href="/pricing">Pricing</Link>
         </nav>
 
@@ -68,9 +68,9 @@ export function LiveNav() {
             <I.Github width={16} height={16} />
           </a>
           <Link href="/login" className="btn btn-quiet">Sign in</Link>
-          <a href="#" className="btn btn-primary">
+          <Link href="/extension" className="btn btn-primary">
             <I.Chrome width={15} height={15} /> Add to Chrome
-          </a>
+          </Link>
         </div>
       </div>
     </header>

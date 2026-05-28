@@ -19,27 +19,25 @@ export function Footer() {
         <FootCol
           title="Product"
           links={[
-            ["How it works", "#how"],
-            ["Use cases", "#cases"],
-            ["For agents", "#mcp"],
+            ["How it works", "/#how"],
+            ["Use cases", "/#cases"],
+            ["For agents", "/#mcp"],
             ["Pricing", "/pricing"],
-            ["Changelog", "#"],
+            ["Get the extension", "/extension"],
           ]}
         />
         <FootCol
           title="Developers"
           links={[
-            ["Docs", "#"],
-            ["MCP reference", "#"],
-            ["Webhooks", "#"],
+            ["How it works", "/how-it-works"],
+            ["MCP reference", "/#mcp"],
+            ["Get the extension", "/extension"],
             ["GitHub", "https://github.com/GPT-64590/uatchit"],
-            ["Status", "#"],
           ]}
         />
         <FootCol
           title="Company"
           links={[
-            ["Manifesto", "#"],
             ["Privacy", "/privacy"],
             ["Terms", "/terms"],
             ["Contact", "mailto:hello@uatchit.com"],
