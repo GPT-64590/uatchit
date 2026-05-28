@@ -1,0 +1,2 @@
+ALTER TABLE "change" ADD COLUMN "seenAt" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "user" ADD COLUMN "notificationPrefs" jsonb DEFAULT '{"email":true,"digest":false,"onChange":true,"onError":true}'::jsonb NOT NULL;

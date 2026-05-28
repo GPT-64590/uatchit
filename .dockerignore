@@ -1,0 +1,20 @@
+# Dependencies + build output (rebuilt inside the image)
+**/node_modules
+**/.next
+apps/extension/build
+apps/extension/.plasmo
+
+# Secrets — never copy into the image (injected at runtime via env_file)
+.env
+.env.*
+!.env.example
+apps/web/.env.local
+
+# VCS + local-only docs/assets not needed at runtime
+.git
+.gitignore
+.superpowers
+docs
+logo-pack
+**/.DS_Store
+*.md

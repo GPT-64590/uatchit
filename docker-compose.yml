@@ -1,0 +1,76 @@
+name: uatchit
+
+# Production stack. Port 3000 is never published to the host — ingress is handled
+# by the cloudflared tunnel, which reaches the web container over the internal
+# network. See docs/DEPLOYMENT.md.
+#
+# Required in .env (compose interpolation reads it automatically):
+#   POSTGRES_PASSWORD, TUNNEL_TOKEN, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_MARKETING_URL
+#   ...plus all the app runtime keys from .env.example (loaded via env_file).
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: uatchit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: uatchit
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uatchit -d uatchit"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_MARKETING_URL: ${NEXT_PUBLIC_MARKETING_URL}
+    image: uatchit-app
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://uatchit:${POSTGRES_PASSWORD}@db:5432/uatchit
+    command: ["npm", "run", "db:migrate", "-w", "apps/web"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    image: uatchit-app
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://uatchit:${POSTGRES_PASSWORD}@db:5432/uatchit
+    expose:
+      - "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  cron:
+    image: uatchit-app
+    env_file: .env
+    environment:
+      CRON_TARGET_URL: http://web:3000/api/cron/tick
+    command: ["sh", "scripts/cron-loop.sh"]
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run", "--token", "${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env}"]
+    depends_on:
+      - web
+
+volumes:
+  pgdata:

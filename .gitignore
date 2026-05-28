@@ -1,0 +1,68 @@
+# Environment — NEVER COMMIT
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production builds
+.next/
+out/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+tmp/
+temp/
+*.tsbuildinfo
+
+# Brainstorming visual-companion scratch
+.superpowers/
+
+# Internal build journal + session docs — keep local, never publish
+/CLAUDE.md
+/SESSION-REPORT.md
+/UI-AUDIT.md
+/INFRA.md
+docs/superpowers/
+
+# Model-selection experiments (hand-run via tsx, load .env — not a test suite)
+apps/web/src/lib/__tests__/
+
+# Cloudflare
+.wrangler/
+
+# Vultr local config
+.vultr/
+
+# Secrets we definitely don't want in git
+secrets/
+*.crt
+ssh_keys/

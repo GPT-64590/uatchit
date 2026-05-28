@@ -1,0 +1,1 @@
+ALTER TABLE "markdown_cache" ADD COLUMN "html" text;
