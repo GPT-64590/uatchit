@@ -22,7 +22,7 @@ It infers what matters, watches for changes, and narrates them in plain English 
 ![MCP](https://img.shields.io/badge/MCP-server-8B5CF6)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-*Built for the Bright Data AI × Web Data Weekend.*
+*Built for the Bright Data Hackathon*
 
 </div>
 
