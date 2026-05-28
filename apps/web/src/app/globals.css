@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
 @import "../styles/marketing.css";
 @import "../styles/app.css";
 @import "../styles/auth.css";
