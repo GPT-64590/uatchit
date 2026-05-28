@@ -11,6 +11,8 @@ uatchit turns any page into a structured, AI-monitored data source.
 It infers what matters, watches for changes, and narrates them in plain English —
 **to your inbox, or to your agents.**
 
+### [▶ Try it live — uatchit.com](https://uatchit.com)
+
 <br>
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-000?logo=nextdotjs&logoColor=white)
