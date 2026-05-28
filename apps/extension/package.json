@@ -1,7 +1,8 @@
 {
   "name": "@uatchit/extension",
   "displayName": "uatchit",
-  "version": "0.0.1",
+  "description": "Right-click any web page. Watch it forever. AI tracks what changes and tells you — by email or to your AI agents.",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "plasmo dev",
