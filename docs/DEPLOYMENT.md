@@ -55,6 +55,7 @@ BRIGHTDATA_API_KEY=…
 AUTH_SECRET=…            # openssl rand -base64 32
 CRON_SECRET=…            # openssl rand -hex 32
 AUTH_TRUST_HOST=true
+AUTH_URL=https://app.uatchit.com   # required behind a tunnel, or magic links break
 
 # Public URLs — baked into the client bundle at build time
 NEXT_PUBLIC_APP_URL=https://app.uatchit.com
