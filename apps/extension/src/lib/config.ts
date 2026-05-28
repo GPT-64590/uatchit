@@ -7,15 +7,13 @@
 
 const FALLBACK = "http://localhost:3000";
 
-function fromEnv(): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const e = (globalThis as any)?.process?.env ?? {};
-  const raw = e.PLASMO_PUBLIC_APP_URL as string | undefined;
-  if (!raw) return FALLBACK;
-  return raw.replace(/\/+$/, "");
-}
+// Must reference `process.env.PLASMO_PUBLIC_APP_URL` directly: Plasmo/Parcel
+// statically replaces this exact expression at build time. Reading it
+// indirectly (e.g. via globalThis.process.env) defeats the inlining, leaving
+// the value undefined at runtime and silently falling back to localhost.
+const raw = process.env.PLASMO_PUBLIC_APP_URL;
 
-export const APP_URL = fromEnv();
+export const APP_URL = raw ? raw.replace(/\/+$/, "") : FALLBACK;
 
 export function appUrl(path: string): string {
   if (!path.startsWith("/")) path = "/" + path;
