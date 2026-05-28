@@ -27,7 +27,7 @@
     "typescript": "^5.6.0"
   },
   "manifest": {
-    "permissions": ["sidePanel", "contextMenus", "storage", "activeTab", "cookies", "scripting", "alarms", "tabs"],
+    "permissions": ["sidePanel", "contextMenus", "storage", "activeTab", "scripting", "alarms", "tabs"],
     "host_permissions": ["<all_urls>", "http://localhost:3000/*", "https://app.uatchit.com/*"],
     "side_panel": { "default_path": "sidepanel.html" },
     "action": { "default_title": "uatchit" }
