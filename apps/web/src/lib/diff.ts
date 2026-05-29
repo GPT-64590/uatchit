@@ -30,11 +30,24 @@ export function diffExtracted(
   return out;
 }
 
+// Structural equality, key-order-INSENSITIVE for objects (the LLM may emit the
+// same fields in a different order between two extractions — that's not a change)
+// but order-SENSITIVE for arrays (a reorder can be a real ranking move worth
+// alerting on). Replaces JSON.stringify equality, which was key-order-sensitive.
 function valuesEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
+  if (a == null || b == null) return a === b;
   if (typeof a !== typeof b) return false;
-  if (typeof a === "object" && a !== null && b !== null) {
-    return JSON.stringify(a) === JSON.stringify(b);
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((x, i) => valuesEqual(x, (b as unknown[])[i]));
+  }
+  if (typeof a === "object") {
+    const ao = a as Record<string, unknown>;
+    const bo = b as Record<string, unknown>;
+    const ak = Object.keys(ao);
+    if (ak.length !== Object.keys(bo).length) return false;
+    return ak.every((k) => Object.prototype.hasOwnProperty.call(bo, k) && valuesEqual(ao[k], bo[k]));
   }
   return false;
 }
