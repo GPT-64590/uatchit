@@ -22,6 +22,7 @@ export async function resumeWatch(watchId: string): Promise<void> {
     .update(watches)
     .set({
       status: "active",
+      consecutiveFailures: 0, // fresh transient-failure tolerance on manual resume
       updatedAt: new Date(),
       nextFetchAt: new Date(Date.now() + 60_000),
     })
@@ -65,10 +66,16 @@ export async function rerunNow(watchId: string): Promise<void> {
 
 export async function markChangeSeen(changeId: string): Promise<void> {
   const userId = await requireUserId();
-  await db
+  const [row] = await db
     .update(changes)
     .set({ seenAt: new Date() })
-    .where(and(eq(changes.id, changeId), eq(changes.userId, userId)));
+    .where(and(eq(changes.id, changeId), eq(changes.userId, userId)))
+    .returning({ watchId: changes.watchId });
+  // Revalidate so the watch detail's "mark all N seen" count + dashboard/activity
+  // badges reflect the change immediately (previously they stayed stale).
+  if (row) revalidatePath(`/app/watches/${row.watchId}`);
+  revalidatePath("/app/activity");
+  revalidatePath("/app");
 }
 
 export async function markAllSeen(watchId: string): Promise<void> {
