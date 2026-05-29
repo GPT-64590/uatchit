@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { watches } from "@/db/schema";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, lte, asc } from "drizzle-orm";
 import { tickOneWatch } from "@/server/tick-one-watch";
 import { env } from "@/lib/env";
 
@@ -20,6 +20,9 @@ export async function POST(req: Request) {
     .select({ id: watches.id })
     .from(watches)
     .where(and(eq(watches.status, "active"), lte(watches.nextFetchAt, now)))
+    // Longest-overdue first, so a backlog beyond the per-tick LIMIT can't starve
+    // the oldest watches (the previous unordered select had no such guarantee).
+    .orderBy(asc(watches.nextFetchAt))
     .limit(20);
 
   if (due.length === 0) {
