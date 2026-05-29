@@ -127,8 +127,15 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
   });
 
   try {
-    const [user] = await db.select({ email: users.email }).from(users).where(eq(users.id, watch.userId)).limit(1);
-    if (user?.email) {
+    const [user] = await db
+      .select({ email: users.email, prefs: users.notificationPrefs })
+      .from(users)
+      .where(eq(users.id, watch.userId))
+      .limit(1);
+    // Honor the user's notification preferences — never email someone who turned
+    // change alerts off (CAN-SPAM / GDPR). prefs is NOT NULL with a default, so
+    // it's always present; the optional chaining is belt-and-suspenders.
+    if (user?.email && user.prefs?.email && user.prefs?.onChange) {
       await sendChangeNotification({
         to: user.email,
         watchId,
