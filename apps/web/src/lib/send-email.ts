@@ -2,6 +2,7 @@ import "server-only";
 import { Resend } from "resend";
 import { render } from "@react-email/components";
 import { env } from "@/lib/env";
+import { signEmailToken } from "@/lib/email-tokens";
 import ChangeNotificationEmail from "@/emails/change-notification";
 import type { Diff } from "./diff";
 import type { InferredSchema } from "./infer-schema";
@@ -10,6 +11,7 @@ const resend = new Resend(env.RESEND_API_KEY);
 
 export async function sendChangeNotification(args: {
   to: string;
+  userId: string;
   watchId: string;
   watchTitle: string;
   watchUrl: string;
@@ -18,7 +20,7 @@ export async function sendChangeNotification(args: {
   schema: InferredSchema;
   cadenceMinutes: number;
 }) {
-  const { to, watchId, watchTitle, watchUrl, narration, diff, schema, cadenceMinutes } = args;
+  const { to, userId, watchId, watchTitle, watchUrl, narration, diff, schema, cadenceMinutes } = args;
 
   const fieldChanges = Object.entries(diff).map(([key, change]) => {
     const field = schema.fields.find((f) => f.name === key);
@@ -34,8 +36,11 @@ export async function sendChangeNotification(args: {
   const appUrl = env.NEXT_PUBLIC_APP_URL;
   const detailUrl = `${appUrl}/app/watches/${watchId}`;
   const manageUrl = `${appUrl}/app/watches/${watchId}?tab=settings`;
-  const pauseUrl = `${appUrl}/app/watches/${watchId}?tab=settings&action=pause`;
-  const unsubscribeUrl = `${appUrl}/app/settings`;
+  // Real one-click actions (HMAC-signed, no login bounce). The old pauseUrl set a
+  // dead ?action=pause the page ignored, and unsubscribe pointed at the auth-
+  // gated settings page with no actual unsubscribe.
+  const pauseUrl = `${appUrl}/api/email/pause?token=${signEmailToken({ u: userId, w: watchId, a: "pause" })}`;
+  const unsubscribeUrl = `${appUrl}/api/email/unsubscribe?token=${signEmailToken({ u: userId, a: "unsubscribe" })}`;
   const mcpUrl = `${appUrl}/app/watches/${watchId}?tab=mcp`;
   const fieldCount = fieldChanges.length;
   const contextLine = fieldCount > 0
@@ -66,7 +71,12 @@ export async function sendChangeNotification(args: {
     to,
     subject,
     html,
-    text: `${watchTitle} changed\n\n${narration}\n\nView: ${detailUrl}`,
+    text: `${watchTitle} changed\n\n${narration}\n\nView: ${detailUrl}\n\nUnsubscribe: ${unsubscribeUrl}`,
+    headers: {
+      // Gmail/Yahoo bulk-sender requirement (RFC 8058 one-click unsubscribe).
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
   });
   if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`);
 }

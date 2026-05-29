@@ -138,6 +138,7 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
     if (user?.email && user.prefs?.email && user.prefs?.onChange) {
       await sendChangeNotification({
         to: user.email,
+        userId: watch.userId,
         watchId,
         watchTitle: watch.title ?? watch.url,
         watchUrl: watch.url,
