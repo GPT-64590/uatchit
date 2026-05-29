@@ -57,12 +57,17 @@ Extract the current value of each field. Return a single JSON object keyed by fi
 
   const zSchema = buildExtractionSchema(schema.fields);
 
+  // Scale the output budget with field count. A broad (up to 30-field) schema
+  // whose arrays hold many items can exceed a flat 4096 → the JSON truncates →
+  // parse fails → extraction silently empties. ~600 tokens/field, capped.
+  const maxOutputTokens = Math.min(16_000, Math.max(4096, schema.fields.length * 600));
+
   return generateStructured({
     schema: zSchema as never,
     prompt,
     systemInstruction: SYSTEM_INSTRUCTION,
     temperature: 0.0,
-    maxOutputTokens: 4096,
+    maxOutputTokens,
   });
 }
 
