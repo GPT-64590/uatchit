@@ -7,7 +7,10 @@ import type {
   ChatCompletionTool,
 } from "openai/resources/chat/completions";
 
-const MAX_TURNS = 6;
+// One LLM call per turn; a text-only reply ends the loop. Each user message gets
+// a fresh budget, so this only bounds a single message that needs many sequential
+// tool calls (e.g. "watch these 5 URLs"). 10 gives headroom for multi-action asks.
+const MAX_TURNS = 10;
 
 /**
  * Wire-level message — the side panel sends a history of these and the agent
@@ -245,7 +248,14 @@ export async function* runAgent(input: AgentInput): AsyncGenerator<AgentEvent> {
     history.push({ role: "tool", results });
   }
 
-  yield { type: "error", detail: `agent hit max turns (${MAX_TURNS})` };
+  // Hit the turn ceiling mid-task. Don't surface a raw "max turns" error — give
+  // the user a graceful, actionable message and end the stream cleanly.
+  yield {
+    type: "text",
+    delta:
+      "\n\nThis is taking more steps than I can do in one go. Could you narrow it down — one page or one thing to track at a time — and I'll pick it up from there?",
+  };
+  yield { type: "done" };
 }
 
 export function encodeNdjson(ev: AgentEvent): string {
