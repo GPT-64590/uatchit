@@ -34,7 +34,7 @@ export default function CheckEmailPage() {
         <div className="auth-check-tips">
           <div className="auth-check-tip">
             <span className="auth-check-tip-n mono">01</span>
-            <span>The email is from <span className="mono">onboarding@resend.dev</span>.</span>
+            <span>The email is from <span className="mono">noreply@uatchit.com</span>.</span>
           </div>
           <div className="auth-check-tip">
             <span className="auth-check-tip-n mono">02</span>

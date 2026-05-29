@@ -75,8 +75,6 @@ export default async function LoginPage({
               <span><I.Clock width={11} height={11} /> expires in 24h</span>
               <span className="auth-meta-sep" />
               <span><I.Lock width={11} height={11} /> single-use</span>
-              <span className="auth-meta-sep" />
-              <span>delivered via Resend</span>
             </div>
           </form>
 

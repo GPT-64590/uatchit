@@ -47,8 +47,8 @@ export default function Privacy() {
 
         <h2 className="text-xl font-medium mt-10 mb-3">Email</h2>
         <p className="text-text-muted text-sm">
-          We send transactional emails (sign-in links, change notifications) via Resend. We
-          don&apos;t send marketing email without opt-in.
+          We send transactional emails (sign-in links, change notifications) through a
+          third-party email provider. We don&apos;t send marketing email without opt-in.
         </p>
 
         <h2 className="text-xl font-medium mt-10 mb-3">Data deletion</h2>
