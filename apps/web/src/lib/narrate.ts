@@ -49,3 +49,16 @@ Write a 1-2 sentence summary. Max 280 chars.`;
   });
   return text.trim();
 }
+
+// Deterministic fallback for when the narration LLM call fails. We must never
+// drop a real, detected change just because the model blipped — persist the
+// change with a plain, factual summary derived directly from the diff instead.
+export function fallbackNarration(diff: Diff): string {
+  const parts = Object.entries(diff).map(([k, c]) =>
+    c.kind === "added" ? `${k} added` : c.kind === "removed" ? `${k} removed` : `${k} changed`,
+  );
+  if (parts.length === 0) return "A change was detected on this page.";
+  const shown = parts.slice(0, 6).join(", ");
+  const more = parts.length > 6 ? `, and ${parts.length - 6} more` : "";
+  return `${parts.length} field${parts.length === 1 ? "" : "s"} changed: ${shown}${more}.`;
+}

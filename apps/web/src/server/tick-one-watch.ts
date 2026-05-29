@@ -5,14 +5,14 @@ import { eq, desc } from "drizzle-orm";
 import { bdFetchWithRetry } from "@/lib/brightdata";
 import { extractFields, sha256 } from "@/lib/extract";
 import { diffExtracted, isMaterialDiff } from "@/lib/diff";
-import { narrateDiff } from "@/lib/narrate";
+import { narrateDiff, fallbackNarration } from "@/lib/narrate";
 import { sendChangeNotification } from "@/lib/send-email";
 import { looksLikeErrorPage, allTrackedValuesDropped } from "@/lib/page-access";
 import type { InferredSchema } from "@/lib/infer-schema";
 
 export interface TickResult {
   watchId: string;
-  status: "no_change" | "changed" | "unavailable" | "fetch_error" | "extract_error" | "narrate_error" | "email_error";
+  status: "no_change" | "changed" | "unavailable" | "fetch_error" | "extract_error" | "email_error";
   detail?: string;
   durationMs: number;
 }
@@ -108,12 +108,13 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
     return { watchId, status: "no_change", durationMs: Date.now() - started };
   }
 
+  // Narration is a nicety; a failure here must NOT drop the detected change.
+  // Fall back to a deterministic summary so the change row + email still go out.
   let narration: string;
   try {
     narration = await narrateDiff({ watchTitle: watch.title ?? watch.url, schema, diff });
-  } catch (e: unknown) {
-    const err = e as { message?: string };
-    return { watchId, status: "narrate_error", detail: String(err?.message ?? e), durationMs: Date.now() - started };
+  } catch {
+    narration = fallbackNarration(diff);
   }
 
   await db.insert(changes).values({
