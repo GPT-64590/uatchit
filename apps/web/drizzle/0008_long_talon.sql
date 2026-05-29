@@ -1,0 +1,1 @@
+ALTER TABLE "watch" ADD COLUMN "consecutiveFailures" integer DEFAULT 0 NOT NULL;

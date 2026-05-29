@@ -6,7 +6,7 @@ import { bdFetchWithRetry } from "@/lib/brightdata";
 import { extractFields, sha256 } from "@/lib/extract";
 import { diffExtracted, isMaterialDiff } from "@/lib/diff";
 import { narrateDiff, fallbackNarration } from "@/lib/narrate";
-import { sendChangeNotification } from "@/lib/send-email";
+import { sendChangeNotification, sendWatchUnreachableNotice } from "@/lib/send-email";
 import { looksLikeErrorPage, allTrackedValuesDropped } from "@/lib/page-access";
 import type { InferredSchema } from "@/lib/infer-schema";
 
@@ -17,15 +17,54 @@ export interface TickResult {
   durationMs: number;
 }
 
-// A failed/dead fetch and a recoverable error share the same persistence: flag
-// the watch (so it surfaces in the dashboard + drops out of the cron selection)
-// and advance the schedule. Resuming the watch re-activates it.
-async function setWatchErrored(watchId: string, intervalMinutes: number): Promise<void> {
+// Tolerate one transient failure; flag the watch on the 2nd consecutive one.
+const FAILURE_THRESHOLD = 2;
+
+// Records a failed/unavailable tick. Below the threshold the watch stays active
+// and retries next cadence, so a transient outage self-heals. At/above it the
+// watch is flagged "error" (drops out of cron until resumed). Returns
+// justFlagged=true on the single tick that crosses the threshold, so the caller
+// can send exactly one notice. The counter resets to 0 on any successful tick.
+async function recordFailure(
+  watch: { id: string; intervalMinutes: number; consecutiveFailures: number },
+): Promise<{ flagged: boolean; justFlagged: boolean }> {
+  const failures = (watch.consecutiveFailures ?? 0) + 1;
+  const flagged = failures >= FAILURE_THRESHOLD;
+  const wasFlagged = (watch.consecutiveFailures ?? 0) >= FAILURE_THRESHOLD;
   await db.update(watches).set({
-    status: "error",
+    status: flagged ? "error" : "active",
+    consecutiveFailures: failures,
     lastFetchedAt: new Date(),
-    nextFetchAt: new Date(Date.now() + intervalMinutes * 60_000),
-  }).where(eq(watches.id, watchId));
+    nextFetchAt: new Date(Date.now() + watch.intervalMinutes * 60_000),
+  }).where(eq(watches.id, watch.id));
+  return { flagged, justFlagged: flagged && !wasFlagged };
+}
+
+// One-time, prefs-gated "we can no longer reach this page" notice. Best-effort:
+// a send failure must not fail the tick.
+async function maybeNotifyUnreachable(
+  watch: { id: string; userId: string; url: string; title: string | null; intervalMinutes: number },
+  detail: string,
+): Promise<void> {
+  const [user] = await db
+    .select({ email: users.email, prefs: users.notificationPrefs })
+    .from(users)
+    .where(eq(users.id, watch.userId))
+    .limit(1);
+  if (!(user?.email && user.prefs?.email && user.prefs?.onError)) return;
+  try {
+    await sendWatchUnreachableNotice({
+      to: user.email,
+      userId: watch.userId,
+      watchId: watch.id,
+      watchTitle: watch.title ?? watch.url,
+      watchUrl: watch.url,
+      detail,
+      cadenceMinutes: watch.intervalMinutes,
+    });
+  } catch {
+    /* notice is best-effort */
+  }
 }
 
 export async function tickOneWatch(watchId: string): Promise<TickResult> {
@@ -41,10 +80,13 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
 
   const bd = await bdFetchWithRetry({ url: watch.url, format: "markdown", fallbackToBrowser: true });
   if (!bd.ok) {
-    await setWatchErrored(watchId, watch.intervalMinutes);
+    const { justFlagged } = await recordFailure(watch);
     // A 404/410/451 is the page being gone, not a transient fetch failure.
-    const status = bd.reason === "not_found" ? "unavailable" : "fetch_error";
-    return { watchId, status, detail: `${bd.reason}: ${bd.detail}`, durationMs: Date.now() - started };
+    const unavailable = bd.reason === "not_found";
+    if (justFlagged) {
+      await maybeNotifyUnreachable(watch, unavailable ? "it returned not found (404)" : `the fetch keeps failing (${bd.reason})`);
+    }
+    return { watchId, status: unavailable ? "unavailable" : "fetch_error", detail: `${bd.reason}: ${bd.detail}`, durationMs: Date.now() - started };
   }
 
   // Source-availability guard (pre-extraction): a page that now serves an error
@@ -52,7 +94,8 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
   // ok content. Diffing that against the real prior snapshot fires a false
   // "everything changed" alert — the #1 cause of spurious emails. Flag instead.
   if (looksLikeErrorPage(bd.body)) {
-    await setWatchErrored(watchId, watch.intervalMinutes);
+    const { justFlagged } = await recordFailure(watch);
+    if (justFlagged) await maybeNotifyUnreachable(watch, "the page now returns an error / not-found shell instead of content");
     return { watchId, status: "unavailable", detail: "page now returns an error/not-found shell instead of content", durationMs: Date.now() - started };
   }
 
@@ -61,10 +104,11 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
   try {
     extracted = await extractFields({ schema, markdown: bd.body });
   } catch (e: unknown) {
-    // Advance the schedule + flag the watch — otherwise nextFetchAt stays in the
-    // past and the cron re-selects this watch every cycle, re-burning a Bright
-    // Data + LLM call forever on a watch that keeps failing extraction.
-    await setWatchErrored(watchId, watch.intervalMinutes);
+    // Count it toward the failure threshold (so it advances nextFetchAt and
+    // eventually flags + stops, instead of re-burning a fetch+LLM call every
+    // cycle), but don't email — extraction failure is an internal error, not a
+    // page problem the user can act on.
+    await recordFailure(watch);
     const err = e as { message?: string };
     return { watchId, status: "extract_error", detail: String(err?.message ?? e), durationMs: Date.now() - started };
   }
@@ -81,7 +125,8 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
   // Don't write a spurious all-removed change or email; flag the watch and keep
   // the last good snapshot as the baseline so it recovers cleanly on resume.
   if (allTrackedValuesDropped(prev?.extracted as Record<string, unknown> | undefined, extracted)) {
-    await setWatchErrored(watchId, watch.intervalMinutes);
+    const { justFlagged } = await recordFailure(watch);
+    if (justFlagged) await maybeNotifyUnreachable(watch, "every tracked field dropped — the page is likely broken, gated, or removed");
     return { watchId, status: "unavailable", detail: "all tracked fields dropped — likely a broken or gated page, not a real change", durationMs: Date.now() - started };
   }
 
@@ -100,6 +145,7 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
 
   await db.update(watches).set({
     status: "active",
+    consecutiveFailures: 0, // successful tick — reset the transient-failure counter
     lastFetchedAt: new Date(),
     nextFetchAt: new Date(Date.now() + watch.intervalMinutes * 60_000),
   }).where(eq(watches.id, watchId));

@@ -57,6 +57,13 @@
       "when": 1779831397589,
       "tag": "0007_flashy_devos",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780085013428,
+      "tag": "0008_long_talon",
+      "breakpoints": true
     }
   ]
 }

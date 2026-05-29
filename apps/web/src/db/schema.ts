@@ -94,6 +94,10 @@ export const watches = pgTable(
     schema: jsonb("schema").notNull(),
     intervalMinutes: integer("intervalMinutes").notNull().default(360),
     status: text("status").notNull().default("active"),
+    // Consecutive failed/unavailable ticks. Tolerates transient outages: the
+    // watch keeps retrying until this crosses a threshold, then it's flagged
+    // (status="error") and the user gets one notice. Reset to 0 on any success.
+    consecutiveFailures: integer("consecutiveFailures").notNull().default(0),
     lastFetchedAt: timestamp("lastFetchedAt", { withTimezone: true }),
     nextFetchAt: timestamp("nextFetchAt", { withTimezone: true }),
     createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
