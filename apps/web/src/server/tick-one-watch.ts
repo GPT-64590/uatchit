@@ -7,13 +7,25 @@ import { extractFields, sha256 } from "@/lib/extract";
 import { diffExtracted, isMaterialDiff } from "@/lib/diff";
 import { narrateDiff } from "@/lib/narrate";
 import { sendChangeNotification } from "@/lib/send-email";
+import { looksLikeErrorPage, allTrackedValuesDropped } from "@/lib/page-access";
 import type { InferredSchema } from "@/lib/infer-schema";
 
 export interface TickResult {
   watchId: string;
-  status: "no_change" | "changed" | "fetch_error" | "extract_error" | "narrate_error" | "email_error";
+  status: "no_change" | "changed" | "unavailable" | "fetch_error" | "extract_error" | "narrate_error" | "email_error";
   detail?: string;
   durationMs: number;
+}
+
+// A failed/dead fetch and a recoverable error share the same persistence: flag
+// the watch (so it surfaces in the dashboard + drops out of the cron selection)
+// and advance the schedule. Resuming the watch re-activates it.
+async function setWatchErrored(watchId: string, intervalMinutes: number): Promise<void> {
+  await db.update(watches).set({
+    status: "error",
+    lastFetchedAt: new Date(),
+    nextFetchAt: new Date(Date.now() + intervalMinutes * 60_000),
+  }).where(eq(watches.id, watchId));
 }
 
 export async function tickOneWatch(watchId: string): Promise<TickResult> {
@@ -29,12 +41,19 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
 
   const bd = await bdFetchWithRetry({ url: watch.url, format: "markdown", fallbackToBrowser: true });
   if (!bd.ok) {
-    await db.update(watches).set({
-      status: "error",
-      lastFetchedAt: new Date(),
-      nextFetchAt: new Date(Date.now() + watch.intervalMinutes * 60_000),
-    }).where(eq(watches.id, watchId));
-    return { watchId, status: "fetch_error", detail: `${bd.reason}: ${bd.detail}`, durationMs: Date.now() - started };
+    await setWatchErrored(watchId, watch.intervalMinutes);
+    // A 404/410/451 is the page being gone, not a transient fetch failure.
+    const status = bd.reason === "not_found" ? "unavailable" : "fetch_error";
+    return { watchId, status, detail: `${bd.reason}: ${bd.detail}`, durationMs: Date.now() - started };
+  }
+
+  // Source-availability guard (pre-extraction): a page that now serves an error
+  // shell ("Page not found", "Request Failed"…) comes back from Bright Data as
+  // ok content. Diffing that against the real prior snapshot fires a false
+  // "everything changed" alert — the #1 cause of spurious emails. Flag instead.
+  if (looksLikeErrorPage(bd.body)) {
+    await setWatchErrored(watchId, watch.intervalMinutes);
+    return { watchId, status: "unavailable", detail: "page now returns an error/not-found shell instead of content", durationMs: Date.now() - started };
   }
 
   const schema = watch.schema as InferredSchema;
@@ -52,6 +71,15 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
     .where(eq(snapshots.watchId, watchId))
     .orderBy(desc(snapshots.fetchedAt))
     .limit(1);
+
+  // Source-availability guard (post-extraction): if every previously-populated
+  // field dropped to null, the page broke/gated rather than "everything changed".
+  // Don't write a spurious all-removed change or email; flag the watch and keep
+  // the last good snapshot as the baseline so it recovers cleanly on resume.
+  if (allTrackedValuesDropped(prev?.extracted as Record<string, unknown> | undefined, extracted)) {
+    await setWatchErrored(watchId, watch.intervalMinutes);
+    return { watchId, status: "unavailable", detail: "all tracked fields dropped — likely a broken or gated page, not a real change", durationMs: Date.now() - started };
+  }
 
   const diff = diffExtracted(prev?.extracted as Record<string, unknown> | undefined, extracted);
   const hash = await sha256(bd.body);

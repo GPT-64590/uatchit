@@ -56,6 +56,40 @@ export function contentLooksUnwatchable(markdown: string): AccessVerdict {
   return { ok: true };
 }
 
+// Tick-time guard: error/not-found pages announce themselves at the TOP
+// ("Page not found", "Request Failed", "Access Denied"…), so we test the error
+// patterns against the leading content REGARDLESS of total length. This catches
+// a content-rich 404 (e.g. GitHub's 124 KB "Page not found" page) that the
+// length-gated contentLooksUnwatchable misses. We only check ERROR_RE here (not
+// GATED_RE) so a real content page with a "sign in" CTA stays watchable.
+const LEADING_CONTENT = 800;
+export function looksLikeErrorPage(markdown: string): boolean {
+  const head = (markdown ?? "").trim().slice(0, LEADING_CONTENT);
+  return ERROR_RE.test(head);
+}
+
+function isPresent(v: unknown): boolean {
+  if (v === null || v === undefined) return false;
+  if (typeof v === "string") return v.trim().length > 0;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") return Object.keys(v as object).length > 0;
+  return true; // numbers (incl. 0), booleans (incl. false) are real values
+}
+
+// Tick-time guard: a watched page that 404s / gates / breaks extracts to all-null
+// against the OLD schema, which would otherwise diff as "every field removed" and
+// fire a false "everything changed" alert. Treat a wholesale drop as a page break,
+// NOT a content change. Requires >=2 previously-populated fields so a legitimate
+// single-field removal (e.g. an incident resolving) is still reported normally.
+export function allTrackedValuesDropped(
+  prev: Record<string, unknown> | null | undefined,
+  next: Record<string, unknown>,
+): boolean {
+  const prevPresent = Object.values(prev ?? {}).filter(isPresent).length;
+  const nextPresent = Object.values(next ?? {}).filter(isPresent).length;
+  return prevPresent >= 2 && nextPresent === 0;
+}
+
 // Human-friendly one-liner for a gated/error/empty reason, for the agent + UI.
 export function unwatchableMessage(reason: "gated" | "error" | "empty"): string {
   switch (reason) {

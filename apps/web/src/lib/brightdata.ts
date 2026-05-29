@@ -17,7 +17,7 @@ export interface BDFetchOk {
 }
 export interface BDFetchErr {
   ok: false;
-  reason: "bd_blocked" | "site_down" | "timeout" | "auth" | "bad_request" | "unknown";
+  reason: "bd_blocked" | "site_down" | "timeout" | "auth" | "bad_request" | "not_found" | "unknown";
   status?: number;
   detail: string;
   durationMs: number;
@@ -98,6 +98,13 @@ export async function bdFetch(opts: FetchOpts): Promise<BDResult> {
     }
     if (upstreamStatus === 429 || upstreamStatus === 403) {
       return { ok: false, reason: "bd_blocked", status: upstreamStatus, detail: body.slice(0, 500), durationMs };
+    }
+    // A hard 404/410/451 means the page is gone — not a content fetch. Surfacing
+    // it stops watches being created on dead URLs and stops the tick diffing a
+    // 404 page against real prior content. BD often omits x-brd-http-status
+    // (defaults to 200), so the tick ALSO content-checks (see looksLikeErrorPage).
+    if (upstreamStatus === 404 || upstreamStatus === 410 || upstreamStatus === 451) {
+      return { ok: false, reason: "not_found", status: upstreamStatus, detail: body.slice(0, 500), durationMs };
     }
 
     return { ok: true, status: upstreamStatus, url, body, format, durationMs, zone };

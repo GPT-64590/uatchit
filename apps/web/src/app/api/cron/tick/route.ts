@@ -41,6 +41,7 @@ export async function POST(req: Request) {
     ticked: results.length,
     changed: results.filter((r) => r.status === "changed").length,
     no_change: results.filter((r) => r.status === "no_change").length,
+    unavailable: results.filter((r) => r.status === "unavailable").length,
     errors: results.filter((r) => r.status.endsWith("_error")).length,
     results,
   };
