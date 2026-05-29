@@ -123,7 +123,7 @@ export default function ExtensionPage() {
               </p>
             </div>
             <div className="cta-actions">
-              <Link href="https://app.uatchit.com" className="btn btn-primary">
+              <Link href="https://app.uatchit.com/app" className="btn btn-primary">
                 Open the dashboard <I.ArrowRight width={14} height={14} />
               </Link>
             </div>
