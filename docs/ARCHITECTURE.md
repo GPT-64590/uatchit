@@ -45,24 +45,29 @@ waitlist_signup             (marketing)
 The heart of the system is `apps/web/src/server/tick-one-watch.ts`. For each due watch:
 
 ```
-fetch markdown        (Bright Data Web Unlocker — src/lib/brightdata.ts)
+fetch markdown        (Bright Data — src/lib/brightdata.ts; surfaces upstream 404/410/451 as not_found)
    │                    retry + browser-zone fallback; result cached in markdown_cache
    ▼
+source available?     (src/lib/page-access.ts — error-shell / all-fields-dropped check)
+   │
+   ├─ no  ──▶ tolerate one tick, then flag the watch + one "page unreachable" notice  (status: unavailable)
+   │
+   ▼ yes
 extract field values  (src/lib/extract.ts — LLM against the stored schema)
    │
    ▼
-diff vs last snapshot  (src/lib/diff.ts — structural field comparison)
+diff vs last snapshot  (src/lib/diff.ts — structural, key-order-insensitive comparison)
    │
    ├─ no change ──▶ record the check, stop
    │
    ▼ changed
-narrate the diff       (src/lib/narrate.ts — LLM turns the diff into a sentence)
+narrate the diff       (src/lib/narrate.ts — LLM → a sentence; deterministic fallback if the LLM fails)
    │
    ▼
-persist snapshot + change row, then email the user (src/lib/send-email.ts → Resend)
+persist snapshot + change row, then email the user (honoring notificationPrefs) (src/lib/send-email.ts → Resend)
 ```
 
-The cron route (`/api/cron/tick`) is gated by an `x-cron-secret` header, selects watches whose next-check time has passed, and runs them with **bounded concurrency** (5 in flight, ≤20 per tick) so one slow page can't stall the batch. The result of each tick is a discriminated `TickResult` union — no silent failures; every outcome (unchanged / changed / fetch-error / extract-error) is an explicit branch.
+The cron route (`/api/cron/tick`) is gated by an `x-cron-secret` header, selects watches whose next-check time has passed, and runs them with **bounded concurrency** (5 in flight, ≤20 per tick) so one slow page can't stall the batch. The result of each tick is a discriminated `TickResult` union — no silent failures; every outcome (`no_change` / `changed` / `unavailable` / `fetch_error` / `extract_error` / `email_error`) is an explicit branch. A watched page that starts returning a 404/error shell is detected (BD `not_found` status, error-shaped content, or an all-fields-dropped extraction) and reported as `unavailable` rather than diffed into a false "everything changed" alert — it's tolerated for one tick (transient outages self-heal), then the watch is flagged and the user gets a single "page no longer reachable" notice (subject to their `notificationPrefs`).
 
 Locally, `scripts/cron-tick-local.sh` POSTs to the tick endpoint; `npm run cron:dev` loops it every 60 s. In production a small Node worker does the same on an interval.
 
