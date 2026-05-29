@@ -162,16 +162,23 @@ async function getActiveTab(): Promise<ActiveTab | null> {
   return null;
 }
 
+// Read WITHOUT consuming. The caller clears it (clearPendingIntent) only after
+// the intent is actually dispatched, so a boot that's cancelled or errors before
+// dispatch leaves the intent in storage for the next open to recover — previously
+// it was removed up-front and the watch trigger silently failed with no feedback.
 async function readPendingIntent(): Promise<Intent | null> {
   try {
     const result = await chrome.storage.local.get("pending-intent");
     const i = result["pending-intent"];
     if (!i || typeof i !== "object") return null;
-    await chrome.storage.local.remove("pending-intent");
     return i as Intent;
   } catch {
     return null;
   }
+}
+
+async function clearPendingIntent(): Promise<void> {
+  try { await chrome.storage.local.remove("pending-intent"); } catch {}
 }
 
 async function fetchWatchState(url: string): Promise<WatchState> {
@@ -357,9 +364,14 @@ export default function SidePanel() {
 
         if (intent) {
           lastIntentTsRef.current = intent.timestamp;
-          if (authResp?.authenticated) handleIntent(intent, tab);
-          // Signed out: stash it and replay the moment sign-in completes.
-          else pendingIntentRef.current = { intent, tab };
+          if (authResp?.authenticated) {
+            handleIntent(intent, tab);
+            clearPendingIntent(); // dispatched — safe to consume
+          } else {
+            // Signed out: stash for in-session replay AND leave it in storage so a
+            // reload before sign-in can still recover it (cleared after replay).
+            pendingIntentRef.current = { intent, tab };
+          }
         }
       } catch (e: unknown) {
         setFatal(String((e as Error)?.message ?? e));
@@ -376,6 +388,7 @@ export default function SidePanel() {
     if (pending) {
       pendingIntentRef.current = null;
       handleIntent(pending.intent, pending.tab);
+      clearPendingIntent(); // replayed after sign-in — consume it
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.kind]);
@@ -487,6 +500,7 @@ export default function SidePanel() {
         lastIntentTsRef.current = intent.timestamp;
         const tab: ActiveTab | null = activeTab ?? (intent.url ? { url: intent.url, title: intent.title } : null);
         handleIntent(intent, tab);
+        clearPendingIntent(); // handled live — clear the cold-boot fallback copy
       }
     }
     chrome.runtime.onMessage.addListener(onMsg);
