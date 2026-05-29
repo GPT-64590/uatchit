@@ -61,6 +61,10 @@ export async function tickOneWatch(watchId: string): Promise<TickResult> {
   try {
     extracted = await extractFields({ schema, markdown: bd.body });
   } catch (e: unknown) {
+    // Advance the schedule + flag the watch — otherwise nextFetchAt stays in the
+    // past and the cron re-selects this watch every cycle, re-burning a Bright
+    // Data + LLM call forever on a watch that keeps failing extraction.
+    await setWatchErrored(watchId, watch.intervalMinutes);
     const err = e as { message?: string };
     return { watchId, status: "extract_error", detail: String(err?.message ?? e), durationMs: Date.now() - started };
   }
