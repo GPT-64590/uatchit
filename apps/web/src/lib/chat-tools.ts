@@ -396,11 +396,13 @@ const createWatchTool: ToolDef<
       if (!access.ok) return { ok: false, reason: access.reason, detail: access.detail };
       if (args.useSchema && typeof args.useSchema === "object") {
         // Step 3a: User pre-approved a schema — extract values only.
-        let extracted: Record<string, unknown> = {};
+        let extracted: Record<string, unknown>;
         try {
           extracted = await extractFields({ schema: args.useSchema as InferredSchema, markdown: md.body });
-        } catch {
-          extracted = {};
+        } catch (e: unknown) {
+          // Don't persist an empty baseline — the first tick would diff {} vs real
+          // data and fire a false "everything changed" alert.
+          return { ok: false, reason: "extraction_failed", detail: String((e as Error)?.message ?? e) };
         }
         result = {
           source: "llm",
@@ -416,11 +418,11 @@ const createWatchTool: ToolDef<
         } catch (e: unknown) {
           return { ok: false, reason: "inference_failed", detail: String((e as Error)?.message ?? e) };
         }
-        let extracted: Record<string, unknown> = {};
+        let extracted: Record<string, unknown>;
         try {
           extracted = await extractFields({ schema, markdown: md.body });
-        } catch {
-          extracted = {};
+        } catch (e: unknown) {
+          return { ok: false, reason: "extraction_failed", detail: String((e as Error)?.message ?? e) };
         }
         result = { source: "llm", schema, extracted, contentMarkdown: md.body };
       }

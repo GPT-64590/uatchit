@@ -49,8 +49,11 @@ export async function createWatch(
   let extracted: Record<string, unknown>;
   try {
     extracted = await extractFields({ schema, markdown: bd.body });
-  } catch {
-    extracted = {};
+  } catch (e: unknown) {
+    // Don't create a watch with an empty baseline snapshot — the first tick would
+    // then diff {} vs real data and fire a false "everything changed" alert.
+    const err = e as { message?: string };
+    return { ok: false, reason: "extraction_failed", detail: String(err?.message ?? e) };
   }
 
   const hash = await sha256(bd.body);
