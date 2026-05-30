@@ -10,11 +10,11 @@ interface Props {
 }
 
 const DEFAULT_TABS: Tab[] = [
-  { title: "Pricing — Stripe", fav: "linear-gradient(135deg, #635BFF, #00D4FF)" },
+  { title: "Pricing · Claude", fav: "linear-gradient(135deg, #d97757, #c2410c)" },
   { title: "Linear",            fav: "linear-gradient(135deg, #5E6AD2, #BBC3FF)" },
 ];
 
-export function BrowserFrame({ url = "stripe.com/pricing", tabs = DEFAULT_TABS, children, style, className = "" }: Props) {
+export function BrowserFrame({ url = "claude.com/pricing", tabs = DEFAULT_TABS, children, style, className = "" }: Props) {
   return (
     <div className={`browser ${className}`} style={style}>
       <div className="browser-bar">

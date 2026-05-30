@@ -89,7 +89,7 @@ function StepVisB() {
       <div className="vis-b-head">
         <span style={{ color: "var(--text-dim)" }}>schema</span>
         <span style={{ color: "var(--accent)" }}>·</span>
-        <span>stripe_pricing</span>
+        <span>claude_pricing</span>
       </div>
       <div className="vis-b-row">
         <span className="mono-key">plan</span>
@@ -100,13 +100,13 @@ function StepVisB() {
       <div className="vis-b-row">
         <span className="mono-key">price</span>
         <span className="vis-b-arrow">→</span>
-        <span className="mono-val">$20.00</span>
+        <span className="mono-val">$17.00</span>
         <span className="mono-tag">USD/mo</span>
       </div>
       <div className="vis-b-row">
-        <span className="mono-key">features</span>
+        <span className="mono-key">models</span>
         <span className="vis-b-arrow">→</span>
-        <span className="mono-val">string[12]</span>
+        <span className="mono-val">string[5]</span>
         <span />
       </div>
       <div className="vis-b-row">
@@ -129,8 +129,8 @@ function StepVisC() {
       <div className="vis-c-row">
         <span className="vis-c-time mono">14:02</span>
         <div className="vis-c-card">
-          <div className="vis-c-title">Stripe Pro: $20 → $25</div>
-          <div className="vis-c-sub">Annual discount removed. Two new features added.</div>
+          <div className="vis-c-title">Claude Pro: + Opus 4.8</div>
+          <div className="vis-c-sub">Usage limit doubled. Two features added.</div>
         </div>
       </div>
       <div className="vis-c-row">
@@ -142,8 +142,8 @@ function StepVisC() {
       <div className="vis-c-row">
         <span className="vis-c-time mono">y&apos;day</span>
         <div className="vis-c-card">
-          <div className="vis-c-title">New tier added: &quot;Scale&quot;</div>
-          <div className="vis-c-sub">Positioned between Pro and Enterprise.</div>
+          <div className="vis-c-title">New model: Haiku 4.5</div>
+          <div className="vis-c-sub">Now available on Free and Pro.</div>
         </div>
       </div>
     </div>

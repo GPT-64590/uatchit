@@ -11,10 +11,10 @@ const samples: Record<Tab, string[]> = {
     "       https://api.uatchit.com/mcp/watches/wt_8sg2/feed",
     "",
     "{",
-    "  \"watch\": \"stripe.com/pricing\",",
+    "  \"watch\": \"claude.com/pricing\",",
     "  \"last_changed_at\": \"2026-05-24T14:02:11Z\",",
-    "  \"narration\": \"Pro tier moved from $20 to $25/mo.\",",
-    "  \"diff\": { \"pro.monthly_price\": [2000, 2500] }",
+    "  \"narration\": \"Opus 4.8 added to the Pro plan; usage limit doubled.\",",
+    "  \"diff\": { \"pro.usage_limit\": [45, 90] }",
     "}",
   ],
   claude: [

@@ -1,5 +1,12 @@
 import { I } from "./_p/Icons";
 import { MotionIn } from "./_p/MotionIn";
+import { DiffFieldsReveal, type DiffFieldData } from "./_p/DiffFieldsReveal";
+
+const DIFF_FIELDS: DiffFieldData[] = [
+  { kind: "add", keyName: "pro.models[+]", adds: ['"Opus 4.8"'] },
+  { kind: "change", keyName: "pro.usage_limit", from: "45 / 5h", to: "90 / 5h" },
+  { kind: "add", keyName: "pro.features[+]", adds: ['"1M token context"', '"Claude in Chrome"'] },
+];
 
 export function LiveDiff() {
   return (
@@ -28,8 +35,8 @@ export function LiveDiff() {
               <div className="diff-head">
                 <div className="diff-fav" />
                 <div className="diff-meta">
-                  <div className="diff-name">Stripe Pricing</div>
-                  <div className="diff-url mono">stripe.com/pricing · 2 min ago</div>
+                  <div className="diff-name">Claude · Pricing</div>
+                  <div className="diff-url mono">claude.com/pricing · 2 min ago</div>
                 </div>
                 <div className="diff-status">
                   <span className="diff-status-dot" /> change detected
@@ -39,37 +46,13 @@ export function LiveDiff() {
               <div className="diff-narration">
                 <span className="diff-narr-mark"><I.Sparkles width={13} height={13} /></span>
                 <span>
-                  <strong>Stripe Pro went from $20 to $25/mo.</strong> The annual discount
-                  was removed and two features were added: <em>&quot;Custom domains&quot;</em> and{" "}
-                  <em>&quot;Webhook replays&quot;</em>. No change to the Starter or Enterprise tiers.
+                  <strong>Claude added Opus 4.8 to the Pro plan</strong> and roughly doubled its
+                  usage limit. Two features were added: <em>1M token context</em> and{" "}
+                  <em>Claude in Chrome</em>. Pricing held at $17/mo ($20 monthly). No change to Free or Max.
                 </span>
               </div>
 
-              <div className="diff-fields">
-                <div className="diff-field">
-                  <div className="diff-field-key mono">pro.monthly_price</div>
-                  <div className="diff-field-vals">
-                    <span className="dv dv-rm mono">$20.00</span>
-                    <I.ArrowRight width={12} height={12} style={{ color: "var(--text-faint)" }} />
-                    <span className="dv dv-add mono">$25.00</span>
-                  </div>
-                </div>
-                <div className="diff-field">
-                  <div className="diff-field-key mono">pro.annual_discount</div>
-                  <div className="diff-field-vals">
-                    <span className="dv dv-rm mono">&quot;2 months free&quot;</span>
-                    <I.ArrowRight width={12} height={12} style={{ color: "var(--text-faint)" }} />
-                    <span className="dv dv-add mono">null</span>
-                  </div>
-                </div>
-                <div className="diff-field">
-                  <div className="diff-field-key mono">pro.features[+]</div>
-                  <div className="diff-field-vals diff-field-vals-stack">
-                    <span className="dv dv-add mono">+ &quot;Custom domains&quot;</span>
-                    <span className="dv dv-add mono">+ &quot;Webhook replays&quot;</span>
-                  </div>
-                </div>
-              </div>
+              <DiffFieldsReveal fields={DIFF_FIELDS} />
 
               <div className="diff-actions">
                 <button className="btn btn-ghost btn-sm">Open timeline</button>

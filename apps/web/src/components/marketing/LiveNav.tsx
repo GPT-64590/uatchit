@@ -6,7 +6,7 @@ import { I } from "./_p/Icons";
 type Color = "warn" | "ok" | "muted" | "rm";
 
 const TICKER: { url: string; tag: string; color: Color }[] = [
-  { url: "stripe.com/pricing",         tag: "price changed", color: "warn" },
+  { url: "claude.com/pricing",         tag: "price changed", color: "warn" },
   { url: "openai.com/blog",            tag: "new post",      color: "ok" },
   { url: "linear.app/changelog",       tag: "+4 features",   color: "ok" },
   { url: "sec.gov/.../8-K",            tag: "filing posted", color: "warn" },

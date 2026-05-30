@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SVGProps } from "react";
 import Link from "next/link";
 import { I } from "./_p/Icons";
 import { MotionIn } from "./_p/MotionIn";
@@ -37,9 +37,6 @@ export function Hero() {
           <Link href="/extension" className="btn btn-primary">
             <I.Chrome width={16} height={16} /> Add to Chrome — it&apos;s free
           </Link>
-          <a href="#demo" className="btn btn-ghost">
-            <I.Eye width={15} height={15} /> See a live watch
-          </a>
         </MotionIn>
 
         <MotionIn className="hero-meta mono" delay={300}>
@@ -84,7 +81,7 @@ function HeroStage() {
     if (step < 2) { setTyped(""); return; }
     const full = step === 2
       ? "Inferring schema…"
-      : "I found a pricing table with 3 plans (Starter, Pro, Enterprise). I'll track each plan's price, included features, and any new tiers.";
+      : "I found a pricing page with 3 plans (Free, Pro, Max). I'll track each plan's price, the models included, and usage limits — and tell you the moment anything changes.";
     let i = 0;
     setTyped("");
     const id = setInterval(() => {
@@ -97,7 +94,7 @@ function HeroStage() {
 
   return (
     <div className="stage">
-      <BrowserFrame url="stripe.com/pricing">
+      <BrowserFrame url="claude.com/pricing">
         <div className="stage-page">
           <PricingPageMock cursorVisible={step >= 1} />
           {step >= 1 && step < 4 && <ContextMenu />}
@@ -109,23 +106,86 @@ function HeroStage() {
   );
 }
 
+// Claude's sunburst mark — radial tapered rays, clay accent. Approximation
+// of Anthropic's brand glyph, drawn inline so the mock needs no asset.
+function ClaudeMark(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="#d97757" strokeWidth="1.5" strokeLinecap="round" aria-hidden {...p}>
+      {Array.from({ length: 12 }).map((_, i) => {
+        const a = (i * Math.PI) / 6;
+        const r1 = i % 2 === 0 ? 2.4 : 3.6;
+        const r2 = i % 2 === 0 ? 9.6 : 7.4;
+        return (
+          <line
+            key={i}
+            x1={12 + Math.cos(a) * r1}
+            y1={12 + Math.sin(a) * r1}
+            x2={12 + Math.cos(a) * r2}
+            y2={12 + Math.sin(a) * r2}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+// Minimal seedling used on each plan card, echoing the real page's tier glyphs.
+function Sprout(p: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p}>
+      <path d="M12 21v-9" />
+      <circle cx="12" cy="9.5" r="2.2" />
+      <path d="M12 14.5c-2.2 0-3.9-1.6-4.2-3.8M12 14.5c2.2 0 3.9-1.6 4.2-3.8" />
+      <circle cx="7.4" cy="10.4" r="1.3" />
+      <circle cx="16.6" cy="10.4" r="1.3" />
+    </svg>
+  );
+}
+
 function PricingPageMock({ cursorVisible }: { cursorVisible: boolean }) {
   return (
     <div className="mockpage">
       <div className="mockpage-header">
-        <div className="mockpage-logo">stripe</div>
+        <div className="mockpage-logo"><ClaudeMark width={19} height={19} /> Claude</div>
         <div className="mockpage-nav">
-          <span>Products</span><span>Solutions</span><span>Developers</span><span>Pricing</span>
+          <span>Meet Claude</span><span>Platform</span><span>Solutions</span>
+          <span>Pricing</span><span>Resources</span><span>Login</span>
+        </div>
+        <div className="mockpage-actions">
+          <span className="mp-btn-outline">Contact sales</span>
+          <span className="mp-btn-solid">Try Claude</span>
         </div>
       </div>
       <div className="mockpage-hero">
-        <div className="mockpage-h1">Simple, transparent pricing</div>
-        <div className="mockpage-sub">Pick the plan that grows with your team.</div>
+        <div className="mockpage-h1">Pricing</div>
+        <div className="mockpage-toggle">
+          <span className="mp-seg mp-seg-on">Individual</span>
+          <span className="mp-seg">Team &amp; Enterprise</span>
+          <span className="mp-seg">API</span>
+        </div>
       </div>
       <div className="mockpage-tiers">
-        <PlanCard name="Starter" price="$0" features={["100 transactions", "Email support", "Basic dashboards"]} />
-        <PlanCard name="Pro" price="$20" highlighted features={["Unlimited transactions", "Priority support", "Advanced analytics", "Webhooks"]} />
-        <PlanCard name="Enterprise" price="Custom" features={["SLA", "Dedicated CSM", "SOC2 reports", "Custom contracts"]} />
+        <PlanCard
+          name="Free"
+          subtitle="Try Claude"
+          price="$0"
+          caption="Free for everyone"
+          features={["Chat on web, iOS & Android", "Write, edit & analyze files", "Ask about images & docs"]}
+        />
+        <PlanCard
+          name="Pro"
+          subtitle="For everyday productivity"
+          price="$17"
+          caption="Per month with annual discount ($200 up front). $20 if billed monthly."
+          features={["More usage than Free", "Access to Projects", "Connect your tools", "Extended thinking"]}
+        />
+        <PlanCard
+          name="Max"
+          subtitle="Get the most out of Claude"
+          price="From $100"
+          caption="Per month"
+          features={["More usage than Pro", "Higher output limits", "Priority at peak times", "Early access to new features"]}
+        />
       </div>
       {cursorVisible && (
         <div className="cursor" aria-hidden>
@@ -136,17 +196,20 @@ function PricingPageMock({ cursorVisible }: { cursorVisible: boolean }) {
   );
 }
 
-function PlanCard({ name, price, features, highlighted }: { name: string; price: string; features: string[]; highlighted?: boolean }) {
+function PlanCard({ name, subtitle, price, caption, features }: { name: string; subtitle: string; price: string; caption: string; features: string[] }) {
   return (
-    <div className={`plan ${highlighted ? "plan-hl" : ""}`}>
+    <div className="plan">
+      <div className="plan-icon"><Sprout width={26} height={26} /></div>
       <div className="plan-name">{name}</div>
-      <div className="plan-price">{price}<span className="plan-per">/mo</span></div>
+      <div className="plan-sub">{subtitle}</div>
+      <div className="plan-price">{price}</div>
+      <div className="plan-caption">{caption}</div>
+      <div className="plan-btn">Try Claude</div>
       <ul className="plan-feats">
         {features.map((f, i) => (
           <li key={i}><I.Check width={12} height={12} /> {f}</li>
         ))}
       </ul>
-      <div className="plan-btn">Choose {name}</div>
     </div>
   );
 }
@@ -201,7 +264,7 @@ function SidePanel({ step, typed }: { step: number; typed: string }) {
             <span className="sp-status-dot" /> watching
           </span>
         </div>
-        <div className="sp-head-url mono">stripe.com/pricing</div>
+        <div className="sp-head-url mono">claude.com/pricing</div>
       </div>
 
       <div className="sp-chat">
@@ -218,7 +281,7 @@ function SidePanel({ step, typed }: { step: number; typed: string }) {
         {step >= 1 && (
           <>
             <Message who="user">
-              <span className="msg-attach mono"><I.Paperclip width={11} height={11} /> stripe.com/pricing</span>
+              <span className="msg-attach mono"><I.Paperclip width={11} height={11} /> claude.com/pricing</span>
               Watch this page for me.
             </Message>
 
@@ -234,7 +297,7 @@ function SidePanel({ step, typed }: { step: number; typed: string }) {
                     <span>{typed}</span>
                     {step >= 3 && typed.length > 100 && (
                       <div className="schema-card">
-                        <div className="schema-card-head mono">inferred schema · stripe_pricing</div>
+                        <div className="schema-card-head mono">inferred schema · claude_pricing</div>
                         <div className="schema-row">
                           <span className="mono-key">plan</span>
                           <span className="mono-val">string</span>
@@ -246,9 +309,9 @@ function SidePanel({ step, typed }: { step: number; typed: string }) {
                           <span className="mono-tag">USD</span>
                         </div>
                         <div className="schema-row">
-                          <span className="mono-key">features[]</span>
+                          <span className="mono-key">models[]</span>
                           <span className="mono-val">string[]</span>
-                          <span className="mono-tag">12 found</span>
+                          <span className="mono-tag">tracked</span>
                         </div>
                       </div>
                     )}
