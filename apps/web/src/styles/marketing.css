@@ -2003,7 +2003,6 @@
   display: grid;
   grid-template-columns: 1.4fr repeat(3, 1fr);
   gap: 40px;
-  padding-bottom: 56px;
 }
 @media (max-width: 880px) {
   .foot-inner { grid-template-columns: 1fr 1fr; }
@@ -2062,7 +2061,6 @@
 .foot-col a:hover { color: var(--text); }
 
 .foot-fine {
-  padding: 22px 28px;
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
@@ -2072,7 +2070,13 @@
   position: relative;
   z-index: 1;
 }
-.foot-fine-right { color: var(--text-dim); }
+
+/* globals' `.container { padding: 0 28px }` is imported after this file, so it
+   overrides the vertical padding these two rows declare (equal specificity,
+   later in the cascade). Win it back with the doubled-class selector so the
+   footer columns and the bottom fine-print line keep their breathing room. */
+.foot-inner.container { padding-bottom: 56px; }
+.foot-fine.container { padding-block: 26px; }
 
 .foot-wordmark {
   position: relative;

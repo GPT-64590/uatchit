@@ -47,9 +47,6 @@ export function Footer() {
 
       <div className="foot-fine container">
         <span className="mono">uatchit, inc. · est. 2026</span>
-        <span className="foot-fine-right mono">
-          made quietly in <span style={{ color: "var(--text-muted)" }}>california</span>
-        </span>
       </div>
 
       <div className="foot-wordmark" aria-hidden>uatchit</div>
